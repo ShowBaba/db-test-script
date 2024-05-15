@@ -43,6 +43,15 @@ func TestHealthCheckHandler(t *testing.T) {
 		}{
 			URI: "mongodb://localhost:27017",
 		},
+		Redis: struct {
+			Address  string "json:\"address\""
+			Password string "json:\"password\""
+			DB       int    "json:\"db\""
+		}{
+			Address:  "localhost:6379",
+			Password: "",
+			DB:       0,
+		},
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -74,6 +83,7 @@ func TestHealthCheckHandler(t *testing.T) {
 	expectedPostgres := "PostgreSQL is alive"
 	expectedMySQL := "MySQL is alive"
 	expectedMongoDB := "MongoDB is alive"
+	expectedRedis := "Redis is alive"
 
 	if response.PostgreSQL != expectedPostgres {
 		t.Errorf("unexpected PostgreSQL response: got %v want %v", response.PostgreSQL, expectedPostgres)
@@ -83,5 +93,8 @@ func TestHealthCheckHandler(t *testing.T) {
 	}
 	if response.MongoDB != expectedMongoDB {
 		t.Errorf("unexpected MongoDB response: got %v want %v", response.MongoDB, expectedMongoDB)
+	}
+	if response.Redis != expectedRedis {
+		t.Errorf("unexpected Redis response: got %v want %v", response.Redis, expectedRedis)
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,12 +34,18 @@ type HealthCheckRequest struct {
 	MongoDB struct {
 		URI string `json:"uri"`
 	} `json:"mongodb"`
+	Redis struct {
+		Address  string `json:"address"`
+		Password string `json:"password"`
+		DB       int    `json:"db"`
+	} `json:"redis"`
 }
 
 type HealthCheckResponse struct {
 	PostgreSQL string `json:"postgresql"`
 	MySQL      string `json:"mysql"`
 	MongoDB    string `json:"mongodb"`
+	Redis      string `json:"redis"`
 }
 
 func connectPostgres(user, password, dbname, host, port, sslmode string) (*sql.DB, error) {
@@ -67,6 +74,21 @@ func connectMongoDB(uri string) (*mongo.Client, error) {
 		return nil, err
 	}
 	return client, nil
+}
+
+func connectRedis(address, password string, db int) (*redis.Client, error) {
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     address,
+		Password: password,
+		DB:       db,
+	})
+
+	_, err := rdb.Ping(context.Background()).Result()
+	if err != nil {
+		return nil, err
+	}
+
+	return rdb, nil
 }
 
 func pingPostgres(db *sql.DB) error {
@@ -130,6 +152,14 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			response.MongoDB = "MongoDB is alive"
 		}
+	}
+
+	redisClient, err := connectRedis(req.Redis.Address, req.Redis.Password, req.Redis.DB)
+	if err != nil {
+		response.Redis = fmt.Sprintf("Failed to connect to Redis: %v", err)
+	} else {
+		defer redisClient.Close()
+		response.Redis = "Redis is alive"
 	}
 
 	w.Header().Set("Content-Type", "application/json")
