@@ -97,4 +97,5 @@ func TestHealthCheckHandler(t *testing.T) {
 	if response.Redis != expectedRedis {
 		t.Errorf("unexpected Redis response: got %v want %v", response.Redis, expectedRedis)
 	}
+	// add more test
 }
